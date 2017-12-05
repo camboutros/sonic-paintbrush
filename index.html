@@ -1,0 +1,126 @@
+<html>
+<head>
+<script src="p5.js"></script>
+<script src="p5.sound.js"></script>
+</head>
+<body>
+<script>
+
+'use strict';
+var img; 
+
+let playing = false;
+let osc;
+let osc2;
+let osc3;
+let freq = 240;
+let freq2 = freq * (3/2); // fifth above root note
+let freq3 = freq * (5/4); // major third above root note
+
+var radius = 100;
+
+function preload(){
+    img = loadImage("power.png");  // Load the image
+}
+
+function setup(){
+    createCanvas(displayWidth,displayHeight);
+
+    osc = new p5.Oscillator();
+    osc.setType('sine');
+    osc.freq(freq);
+    osc.amp(0.5);
+    //osc.start();
+    playing = false;
+
+
+    osc2 = new p5.Oscillator();
+    osc2.setType('sine');
+    osc2.amp(0.4); // a little lower in volume for balance
+    osc2.freq(freq2);
+
+
+    osc3 = new p5.Oscillator();
+    osc3.setType('sine');
+    osc3.amp(0.3); // a little lower in volume for balance
+    osc3.freq(freq2);
+
+}
+function draw(){
+    if (deviceOrientation == undefined) {
+        background(255);
+    }
+    else if (deviceOrientation == LANDSCAPE){
+        background(255,rotationX,0);
+    }
+    else if (deviceOrientation == PORTRAIT){
+        background(0,255,rotationX);
+    }
+
+    osc.freq(freq + pRotationX);
+
+    let rotX = pRotationX - rotationX;
+
+    if(abs(rotX) > .5){
+        if(rotX > 0){
+            osc.setType('sawtooth');
+        }else{
+            osc.setType('sine');
+        }
+    }
+
+    osc2.freq( (freq + pRotationX) * (3/2));
+    osc3.freq( (freq + pRotationX) * (5/4)); 
+    // Buttons
+    fill (255, 0, 0);
+    rect(0, 0, 100, 60); 
+    image(img, 25, 6, 50, 50);
+     
+
+}
+
+function mousePressed(){
+//     if (playing){
+//         osc.stop();
+//         playing = false;
+//     }else{
+//         osc.start();
+//         playing = true;
+//     }
+}
+
+function mouseClicked(){
+    image(img, 25, 6, 50, 50);
+    if (mouseX < 100 && mouseY < 60) {
+        if (playing == false){
+            osc.start();
+            playing = true;
+        } else {
+            osc.stop();
+            playing = false;
+        }
+    }
+}
+
+function touchStarted(){
+    fill(0, 255, 255);
+    ellipse(mouseX, mouseY, radius, radius);
+    if (playing == true) {
+        osc2.start();
+        if (touches.length > 1) {
+            osc3.start();
+        }
+    }
+}
+
+function touchEnded(){
+    background(255,255,255);
+    radius = 100;
+    osc2.stop();
+    osc3.stop();
+}
+
+
+</script>
+</body>
+</html>
