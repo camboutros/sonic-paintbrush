@@ -1,9 +1,17 @@
+<!DOCTYPE html>
 <html>
+
 <head>
 <script src="p5.min.js"></script>
 <script src="p5.sound.min.js"></script>
+<script src="gyronorm.complete.min.js"></script>
+<!--link rel="stylesheet" type="text/css" href="basic.css"/-->
 </head>
+
 <body>
+<!--div id="slidecontainer">
+   <input type="range" min="0", max="500", value="0", class="slider", id="myRange">
+</div-->
 <script>
 
 'use strict';
@@ -13,132 +21,248 @@ let playing = false;
 let osc;
 let osc2;
 let osc3;
-let freq = 240;
+let play;
+let play2;
+let play3;
+let freq = 440;
 let freq2 = freq * (3/2); // fifth above root note
 let freq3 = freq * (5/4); // major third above root note
 let max = 0;
 let maxGain = 0;
+let gain;
+let gain1 = 0;
+let gain2 = 0;
+let gain3 = 0;
+let amplitude;
+let slider = document.getElementById("myRange");
+let tones = 0;
+let drop = 0.8;
+let debug = true;
+let counter = 0;
+
+let rotX = 0;
+let accelX = 0;
+let accelY = 0;
+let accelZ = 0;
+let accel = 0;
 
 var radius = 100;
+var xoff = 0.0;
+
+var gn;
+
+var val = 0;
+
+let env;
+
+let attackLevel = .5;
+let releaseLevel = 0.05;
+
+let attackTime = .3;
+let decayTime = 1.0;
+let susPercent = 0.7;
+let releaseTime = 0.5;
+
+var motion = function(data){
+
+    rotX = data.do.beta;
+    accelX = data.dm.x;
+    accelY = data.dm.y;
+    accelZ = data.dm.z;
+
+}
 
 function preload(){
     img = loadImage("power.png");  // Load the image
 }
 
 function setup(){
-    createCanvas(displayWidth,displayHeight);
+    createCanvas(windowWidth,windowHeight);
+
+    setMoveThreshold(1);
+    //setShakeThreshold(60);
+
+    gain = 0;
+
+    env = new p5.Env();
+    env.setADSR(attackTime, decayTime, susPercent, releaseTime);
+    env.setRange(attackLevel, releaseLevel);
+    env.setExp(true);
 
     osc = new p5.Oscillator();
     osc.setType('sine');
     osc.freq(freq);
-    osc.amp(0.2);
+    osc.amp(env);
     osc.start();
-    playing = true;
+    play = false;
 
 
     osc2 = new p5.Oscillator();
     osc2.setType('sine');
-    osc2.amp(0.4); // a little lower in volume for balance
+    osc2.amp(gain/1.25); // a little lower in volume for balance
     osc2.freq(freq2);
+    osc2.start();
+    play2 = false;
 
 
     osc3 = new p5.Oscillator();
     osc3.setType('sine');
-    osc3.amp(0.3); // a little lower in volume for balance
-    osc3.freq(freq2);
+    osc3.amp(gain/1.55); // a little lower in volume for balance
+    osc3.freq(freq3);
+    osc3.start();
+    play3 = false;
+
+    amplitude = new p5.Amplitude();
+
+    
 
 }
 function draw(){
-    if (deviceOrientation == undefined) {
-        background(255);
-    }
-    else if (deviceOrientation == LANDSCAPE){
-        background(255,rotationX,0);
-    }
-    else if (deviceOrientation == PORTRAIT){
-        background(0,255,rotationX);
+
+  
+
+    xoff = xoff + .01;
+    var nr = noise(xoff) * 255;
+    var ng = noise(xoff*1.3) * 255;
+    var nb = noise(xoff*1.2) * 255;
+
+    background(nr, ng, nb);
+
+    if (mouseIsPressed){
+        for(var i = 0; i < touches.length; i++){
+            let x = touches[i].x;
+            let y = touches[i].y;
+            fill(0);
+            ellipse(x, y, radius,radius);
+        }
+        
     }
 
-   // osc.freq(freq + pRotationX);
+    osc.freq(freq + rotationX);
+    osc2.freq( (freq + rotationX) * (3/2));
+    osc3.freq( (freq + rotationX) * (5/4)); 
 
-    let rotX = pRotationX - rotationX;
-    let accel = abs(accelerationX) + abs(accelerationY) + abs(accelerationZ);
-    let gain = Math.cbrt(accel)/8;
-    osc.amp(gain);
-    osc2.amp(gain/1.25);
-    osc3.amp(gain/1.55);
+    accel = constrain(((abs(accelerationX) + abs(accelerationY) + abs(accelerationZ)) / 100),0,1);
+    gain = constrain((3*sq(accel) - 2*pow(accel,3)),0,0.9);
+
+    let ratio = 0;
+
+    if (play) {
+        tones = touches.length + 1;
+    }else tones = 0;
+
+    for (var i = 0; i < tones; i++){
+    	ratio += pow(drop,i);
+    }
+
+
+    gain1 = 1/ratio * gain;
+    gain2 = drop/ratio * gain;
+    gain3 = (drop*drop)/ratio * gain;
+
+    if(play) osc.fade(gain1,0.3);
+    if (play2) osc2.fade(gain2,0.3); //1.25
+    if (play3) osc3.fade(gain3,0.3); //1.50
 
     if(accel > max) {
         max = accel;
     }
-    if(gain > maxGain) {
-        maxGain = gain;
+    if(gain1+gain2+gain3 > maxGain) {
+        maxGain = gain1 + gain2 +gain3;
     }
 
-    /*if(abs(rotX) > .5){
-        if(rotX > 0){
-            osc.setType('sawtooth');
-        }else{
-            osc.setType('sine');
-        }
-    }*/
-
-    osc2.freq( (freq + pRotationX) * (3/2));
-    osc3.freq( (freq + pRotationX) * (5/4)); 
     // Buttons
     fill (255, 0, 0);
     rect(0, 0, 100, 60); 
     image(img, 25, 6, 50, 50);
-    let txtSize = 24;
-    let txtStart = 100;
-    textSize(txtSize);
-    text("Accel: "+accel,0,100);
-    text("Gain: "+gain,0,130)
-    text("Max Accel: "+max, 0,160);
-    text("Max Gain: "+maxGain, 0, 190);
+
+    if(debug){
+    	fill(255);
+        let txtSize = 72;
+        let txtStart = 100;
+        textSize(txtSize);
+        text("Accel: "+accel,0,140);
+        text("Gain: "+gain,0,220);
+        text("Gain1: "+gain1,0,300);
+        text("Gain2: "+gain2,0,380);
+        text("Gain3 "+gain3,0,460);
+        text("Max Accel: "+max, 0,540);
+        text("Max Gain: "+maxGain, 0, 620);
+        text("Tones: "+tones, 0, 700);
+    }
      
 
 }
 
-function mousePressed(){
-//     if (playing){
-//         osc.stop();
-//         playing = false;
-//     }else{
-//         osc.start();
-//         playing = true;
-//     }
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+var stopped = function(){
+    playing = false;
+
+}
+/*function deviceMoved() {
+    if (!playing) {
+        playing = true;
+        attackLevel = constrain((3*sq(accel) - 2*pow(accel,3)),0,1);
+        releaseLevel = 0.3*attackLevel;
+        attackTime = accel;
+        //decayTime = ;
+        env.setRange(attackLevel, releaseLevel);
+        env.setADSR(attackTime, decayTime, susPercent, releaseTime);
+        let timeout = (attackTime + decayTime + releaseTime)/1000; //total time in ms
+       // setTimeout(stopped, timeout);
+        env.triggerAttack();
+    }
+
+}*/
+
+
+function deviceShaken(){
+	if(debug) debug = false;
+	else debug = true;
+	return false;
 }
 
 function mouseClicked(){
-    image(img, 25, 6, 50, 50);
     if (mouseX < 100 && mouseY < 60) {
-        if (playing == false){
-            osc.start();
-            playing = true;
+        if (play == false){
+            osc.fade(gain,.5);
+            play = true;
+            //fullscreen(true);
         } else {
-            osc.stop();
-            playing = false;
+            osc.fade(0,.5);
+            play = false;
+            //fullscreen(false);
         }
     }
+
 }
 
 function touchStarted(){
-    fill(0, 255, 255);
-    ellipse(mouseX, mouseY, radius, radius);
-    if (playing == true) {
-        osc2.start();
+    if (play == true) {
+        osc2.fade(gain2,.5);
+        play2 = true;
         if (touches.length > 1) {
-            osc3.start();
+            osc3.fade(gain3,.5);
+            play3 = true;
         }
     }
 }
 
+function touchMoved(){
+    return false;
+}
+
 function touchEnded(){
-    background(255,255,255);
-    radius = 100;
-    osc2.stop();
-    osc3.stop();
+    if (play2) {
+    	osc2.fade(0,.5);
+        play2 = false;
+    }
+    if (play3) {
+    	osc3.fade(0,.5);
+        play3 = false;
+    }
 }
 
 
