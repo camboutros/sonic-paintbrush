@@ -4,18 +4,27 @@
 <script src="p5.sound.min.js"></script>
 </head>
 <body>
-<script>
 
+<script id="brush">
 'use strict';
 var img; 
 
 let playing = false;
+
 let osc;
 let osc2;
 let osc3;
+let osc4;
+let osc5;
+
 let freq = 240;
 let freq2 = freq * (3/2); // fifth above root note
 let freq3 = freq * (5/4); // major third above root note
+let freq4 = freq * (9/5) ;  // Minor 7th
+let freq5 = freq * (8/7); // Major 9th
+
+let max = 0;
+let maxGain = 0;
 
 var radius = 100;
 
@@ -26,24 +35,35 @@ function preload(){
 function setup(){
     createCanvas(displayWidth,displayHeight);
 
+    // Could/should slap these into an array... 
+    playing = true;
+    
     osc = new p5.Oscillator();
     osc.setType('sine');
     osc.freq(freq);
-    osc.amp(0.5);
-    //osc.start();
-    playing = false;
-
+    osc.amp(0.2);
+    osc.start();
 
     osc2 = new p5.Oscillator();
     osc2.setType('sine');
     osc2.amp(0.4); // a little lower in volume for balance
     osc2.freq(freq2);
 
-
     osc3 = new p5.Oscillator();
     osc3.setType('sine');
     osc3.amp(0.3); // a little lower in volume for balance
     osc3.freq(freq2);
+
+    osc4 = new p5.Oscillator();
+    osc4.setType('sine');
+    osc4.amp(0.2); // a little lower in volume for balance
+    osc4.freq(freq4);
+
+    osc5 = new p5.Oscillator();
+    osc5.setType('sine');
+    osc5.amp(0.1); // a little lower in volume for balance
+    osc5.freq(freq5);
+   
 
 }
 function draw(){
@@ -57,24 +77,58 @@ function draw(){
         background(0,255,rotationX);
     }
 
-    osc.freq(freq + pRotationX);
-
     let rotX = pRotationX - rotationX;
+    let accel = abs(accelerationX) + abs(accelerationY) + abs(accelerationZ);
+    let gain = Math.cbrt(accel)/8;
 
-    if(abs(rotX) > .5){
+    angleMode(DEGREES);
+    let cosRotX = cos(pRotationY);
+    let sinRotY = sin(pRotationY);
+    console.log(sinRotY, "sine");
+    console.log(cosRotX, "cos");
+
+    osc.amp(gain);
+    osc2.amp(gain/1.25);
+    osc3.amp(gain/1.55);
+    osc4.amp(gain/1.2);
+    osc5.amp(gain/1.15);
+
+    if(accel > max) {
+        max = accel;
+    }
+    if(gain > maxGain) {
+        maxGain = gain;
+    }
+
+    /*if(abs(rotX) > .5){
         if(rotX > 0){
             osc.setType('sawtooth');
         }else{
             osc.setType('sine');
         }
-    }
+    }*/
+    
+    // Oscillator Frequencies 
+    osc.freq(freq + pRotationX);
+    osc2.freq( (freq + pRotationX) * (3/2)); // fifth
+    osc3.freq( (freq + pRotationX) * (5/4)); // third
+    osc4.freq( (freq + pRotationX) * (9/5)); // seventh
+    osc5.freq( (freq + pRotationX) * (8/7)); // ninth
 
-    osc2.freq( (freq + pRotationX) * (3/2));
-    osc3.freq( (freq + pRotationX) * (5/4)); 
-    // Buttons
+    
+    // Buttons // 
+
+    // Power
     fill (255, 0, 0);
     rect(0, 0, 100, 60); 
     image(img, 25, 6, 50, 50);
+    let txtSize = 24;
+    let txtStart = 100;
+    textSize(txtSize);
+    text("Accel: "+accel,0,100);
+    text("Gain: "+gain,0,130)
+    text("Max Accel: "+max, 0,160);
+    text("Max Gain: "+maxGain, 0, 190);
      
 
 }
@@ -107,20 +161,38 @@ function touchStarted(){
     ellipse(mouseX, mouseY, radius, radius);
     if (playing == true) {
         osc2.start();
-        if (touches.length > 1) {
-            osc3.start();
-        }
+        if (touches.length == 2 )osc3.start();
+        if (touches.length == 3) osc4.start();
+        if (touches.length == 4) osc5.start();
     }
 }
 
 function touchEnded(){
     background(255,255,255);
     radius = 100;
-    osc2.stop();
-    osc3.stop();
+   
+    // Want to switch these to switch statements....but that doesn't work on my phone yet
+   
+     if (touches.length == 3)   osc5.stop();
+     if (touches.length == 2)   osc4.stop();
+     if (touches.length == 1)   osc3.stop();
+     if (touches.length == 0)   osc2.stop();
+  
+//      switch(touches.length) {
+//          case(0): osc2.stop();
+//          case(1): osc3.stop();
+//          case(2): osc4.stop();
+//          case(3): osc5.stop();
+//      }
 }
 
 
+</script>
+<script> 
+let elem = document.getElementById("brush");
+if (elem.requestFullscreen) {
+  elem.requestFullscreen();
+}
 </script>
 </body>
 </html>
