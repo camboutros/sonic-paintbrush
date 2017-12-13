@@ -4,8 +4,6 @@
 <head>
 <script src="p5.min.js"></script>
 <script src="p5.sound.min.js"></script>
-<script src="gyronorm.complete.min.js"></script>
-<!--link rel="stylesheet" type="text/css" href="basic.css"/-->
 </head>
 
 <body>
@@ -18,18 +16,29 @@
 var img; 
 
 let playing = false;
+
+let oscillMax = 4;
+
+let oscill = [oscillMax];
+let amp = [oscillMax];
+let freq   = 440;
+let interval = [1, 3/2, 5/4, 9/5];
+let gain = [1, 1.25, 1.2, 1.55];
+
+
 let osc;
 let osc2;
 let osc3;
+
 let play;
 let play2;
 let play3;
-let freq = 440;
+//let freq = 440;
 let freq2 = freq * (3/2); // fifth above root note
 let freq3 = freq * (5/4); // major third above root note
 let max = 0;
 let maxGain = 0;
-let gain;
+
 let gain1 = 0;
 let gain2 = 0;
 let gain3 = 0;
@@ -63,14 +72,13 @@ let decayTime = 1.0;
 let susPercent = 0.7;
 let releaseTime = 0.5;
 
-var motion = function(data){
+var vector = [0.5, -0.2];
+var xoff = 0.0;
 
-    rotX = data.do.beta;
-    accelX = data.dm.x;
-    accelY = data.dm.y;
-    accelZ = data.dm.z;
-
-}
+var howMany = 100;
+var x = [howMany];
+var y = [howMany];
+var speed = [howMany];
 
 function preload(){
     img = loadImage("power.png");  // Load the image
@@ -78,18 +86,36 @@ function preload(){
 
 function setup(){
     createCanvas(windowWidth,windowHeight);
+	background(255,248,21);
+    noStroke();
+    smooth();
 
+    while (i<howMany) 
+    {
+        x[i] = random(0, width);
+        y[i] =random(0, height);
+        speed[i] = random(15,25);
+        i +=1;
+    }
+	
     setMoveThreshold(1);
-    //setShakeThreshold(60);
-
-    gain = 0;
+    //gain = 0;
 
     env = new p5.Env();
     env.setADSR(attackTime, decayTime, susPercent, releaseTime);
     env.setRange(attackLevel, releaseLevel);
     env.setExp(true);
+	
+	for (var i = 0; i < oscillMax; i++){
+	    oscill[i] = new p5.Oscillator();
+		oscill[i].setType('sine');
+		oscill[i].freq(440*interval[i]);
+		oscill[i].amp(0.0);
+		oscill[i].start();
+	}
+}
 
-    osc = new p5.Oscillator();
+   /* osc = new p5.Oscillator();
     osc.setType('sine');
     osc.freq(freq);
     osc.amp(env);
@@ -112,57 +138,106 @@ function setup(){
     osc3.start();
     play3 = false;
 
-    amplitude = new p5.Amplitude();
+    amplitude = new p5.Amplitude();*/
 
     
 
-}
+
 function draw(){
 
+////////////////// VISUAL CODE ////////////////////
+
+    background(188,27,247,3);
+
+   // fill(188,27,247,3);
+   // rect(0,0,width, height);
+
+    var i = 0;
+    while (i < howMany) 
+    {
+        fill(10,182,203,80*speed[i]);
+
+    ellipse(x[i], y[i],speed[i],speed[i]);
+    y[i] += speed[i]*((rotationX/180)*1.5);
+    x[i]+= speed[i]*((rotationY/90)*1.5);
+    if(y[i]<0)
+    {
+        y[i] = height;
+    }
+
+    if (y[i] > height) 
+    {
+        y[i] = 0;
+    }
+
+    if(x[i]<0)
+    {
+        x[i] = width;
+    }
+
+    if(x[i]>width)
+    {
+        x[i]=0;
+    }
+
+    i +=1;
+  }
   
-
-    xoff = xoff + .01;
-    var nr = noise(xoff) * 255;
-    var ng = noise(xoff*1.3) * 255;
-    var nb = noise(xoff*1.2) * 255;
-
-    background(nr, ng, nb);
+  
+   /* background(nr, ng, nb);*/
 
     if (mouseIsPressed){
-        for(var i = 0; i < touches.length; i++){
-            let x = touches[i].x;
-            let y = touches[i].y;
+        for(var j = 0; j < touches.length; j++){
+            let a = touches[j].x;
+            let b = touches[j].y;
             fill(0);
-            ellipse(x, y, radius,radius);
+            ellipse(a, b, radius,radius);
         }
         
     }
+	
+/////////////////// AUDIO CODE //////////////////
 
-    osc.freq(freq + rotationX);
-    osc2.freq( (freq + rotationX) * (3/2));
-    osc3.freq( (freq + rotationX) * (5/4)); 
+//Set frequency of each oscillator according to rotation
+    for (var i = 0; i < oscillMax; i++){
+	    oscill[i].freq( (freq + rotationX) * interval[i] );
+	}
+
+   // osc.freq(freq + rotationX);
+   // osc2.freq( (freq + rotationX) * (3/2));
+    //osc3.freq( (freq + rotationX) * (5/4)); 
 
     accel = constrain(((abs(accelerationX) + abs(accelerationY) + abs(accelerationZ)) / 100),0,1);
-    gain = constrain((3*sq(accel) - 2*pow(accel,3)),0,0.9);
+    amplitude = constrain((3*sq(accel) - 2*pow(accel,3)),0,0.9);
+
 
     let ratio = 0;
 
-    if (play) {
+    if (playing) {
         tones = touches.length + 1;
     }else tones = 0;
+	if (tones > oscillMax) tones = oscillMax;
 
-    for (var i = 0; i < tones; i++){
-    	ratio += pow(drop,i);
+
+    for (var j = 0; j < tones; j++){
+    	ratio += 1/gain[j];//pow(drop,j);
     }
 
+	for (var j = 0; j < tones; j++) {
+	    //Fade oscillitor to normalized amplitude
+        console.log(gain[j] + " " + ratio + " " +amplitude);
+	    amp[j] = (gain[j]/ratio)*amplitude;
+        console.log ("tone "+j+" fade to "+amp[j]);
+		oscill[j].fade( amp[j], 0.3 ); 
+	}
+	
+   // gain1 = 1/ratio * gain;
+   // gain2 = drop/ratio * gain;
+   // gain3 = (drop*drop)/ratio * gain;
 
-    gain1 = 1/ratio * gain;
-    gain2 = drop/ratio * gain;
-    gain3 = (drop*drop)/ratio * gain;
-
-    if(play) osc.fade(gain1,0.3);
-    if (play2) osc2.fade(gain2,0.3); //1.25
-    if (play3) osc3.fade(gain3,0.3); //1.50
+   // if(play) osc.fade(gain1,0.3);
+   // if (play2) osc2.fade(gain2,0.3); //1.25
+   // if (play3) osc3.fade(gain3,0.3); //1.50
 
     if(accel > max) {
         max = accel;
@@ -182,20 +257,23 @@ function draw(){
         let txtStart = 100;
         textSize(txtSize);
         text("Accel: "+accel,0,140);
-        text("Gain: "+gain,0,220);
+        text("Gain: "+amplitude,0,220);
         text("Gain1: "+gain1,0,300);
         text("Gain2: "+gain2,0,380);
         text("Gain3 "+gain3,0,460);
         text("Max Accel: "+max, 0,540);
         text("Max Gain: "+maxGain, 0, 620);
         text("Tones: "+tones, 0, 700);
+		text("RotX: "+rotationX, 0, 780);
+		text("RotY: "+rotationY, 0, 860);
+		text("RotZ: "+rotationZ, 0, 940);
     }
      
 
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+  //resizeCanvas(windowWidth, windowHeight);
 }
 var stopped = function(){
     playing = false;
@@ -226,13 +304,13 @@ function deviceShaken(){
 
 function mouseClicked(){
     if (mouseX < 100 && mouseY < 60) {
-        if (play == false){
-            osc.fade(gain,.5);
-            play = true;
+        if (playing == false){
+            oscill[0].fade(amplitude,.5);
+            playing = true;
             //fullscreen(true);
         } else {
-            osc.fade(0,.5);
-            play = false;
+            oscill[0].fade(0,.5);
+            playing = false;
             //fullscreen(false);
         }
     }
@@ -240,21 +318,60 @@ function mouseClicked(){
 }
 
 function touchStarted(){
-    if (play == true) {
-        osc2.fade(gain2,.5);
-        play2 = true;
+   /* if (touches[0].x < 100 && touches[0].y < 60) {
+        if (playing == false){
+            oscill[0].fade(amp[0],0.5);
+            playing = true;
+            //fullscreen(true);
+        } else {
+            oscill[0].fade(0,0.5);
+            playing = false;
+            //fullscreen(false);
+        }
+    }else{*/
+    if (playing){
+	    for(var j = 1; j < touches.length + 1; j++){
+		    oscill[j].fade(amp[j],0.5);
+        }
+    }
+       /* if (play == true) {
+            osc2.fade(gain2,.5);
+            play2 = true;
         if (touches.length > 1) {
             osc3.fade(gain3,.5);
             play3 = true;
-        }
-    }
+        }*/
+   // }
 }
 
 function touchMoved(){
+/*xoff = xoff + .003;//bigger the number, shorter the wavelength, faster the transition
+  var nr = noise(xoff) * 255;
+  var ng = noise(xoff*1.3) * 255;
+  var nb = noise(xoff*1.2) * 255;
+  console.log(mouseX,mouseY);
+    fill(nr, nb, ng, 128);
+    ellipse(mouseX, mouseY, 80, 80);*/
     return false;
 }
-
+/*function mouseDragged()
+{
+xoff = xoff + .003;//bigger the number, shorter the wavelength, faster the transition
+  var nr = noise(xoff) * 255;
+  var ng = noise(xoff*1.3) * 255;
+  var nb = noise(xoff*1.2) * 255;
+    console.log(mouseX,mouseY);
+    fill(nr, nb, ng, 128);
+    ellipse(mouseX, mouseY, 80, 80);
+}*/
 function touchEnded(){
+   //if (touches.length == 3)   oscill[4].fade(0,0.5);
+     if (touches.length == 2)   oscill[3].fade(0,0.5);
+     if (touches.length == 1)   oscill[2].fade(0,0.5);
+     if (touches.length == 0)   oscill[1].fade(0,0.5);
+   /* for (let j = touches.length; j > 0; j--){
+	    oscill[j].fade(0,0.5);
+    }
     if (play2) {
     	osc2.fade(0,.5);
         play2 = false;
@@ -262,7 +379,7 @@ function touchEnded(){
     if (play3) {
     	osc3.fade(0,.5);
         play3 = false;
-    }
+    }*/
 }
 
 
