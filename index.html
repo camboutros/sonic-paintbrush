@@ -16,6 +16,7 @@
 var img; 
 
 let playing = false;
+let modeScale = false;
 
 let oscillMax = 4;
 
@@ -197,7 +198,40 @@ function draw(){
     }
 	
 /////////////////// AUDIO CODE //////////////////
+//Set frequency of each oscillator according to rotation
+    var theRot = rotationX;
+    // var normRot = abs(rotationX)/180; 
+    if (modeScale){ 
+       theRot = rotationX + 180;
+//     if (normRot < 15) { normRot = 0}
+//     else if ((normRot >= 15) && (normRot < 30)) {normRot = 15}
+//     else if ((normRot >= 30) && (normRot < 45)) {normRot = 30}    
+//     else if ((normRot >= 45) && (normRot < 60)) {normRot = 45}
+//     else if ((normRot >= 60) && (normRot < 75)) {normRot = 60}
+//     else if ((normRot >= 75) && (normRot < 90)) {normRot = 75}
+//     else if ((normRot >= 90) && (normRot < 105)) {normRot = 90}
+//     else if ((normRot >= 105) && (normRot < 120)) {normRot = 105}
+//     else if ((normRot >= 120) && (normRot < 135)) {normRot = 120}
+//     else if ((normRot >= 135) && (normRot < 150)) {normRot = 135}
+//     else if ((normRot >= 150) && (normRot < 165)) {normRot = 150}
+//     else if ((normRot >= 165) && (normRot < 180)) {normRot = 175}
 
+   
+       // Using a range of 0 - 350, semitone = 15, whole tone = 30, whole and a half = 45   
+       // Pentatonic pattern is whole, whole, whole and a half, whole, whole and a half, etc... 
+       // But for some reason this gave us something closer to  double harmonic minor scale. Will look into why. 
+
+       if (theRot < 36) {theRot = 0}
+       else if ((theRot >= 36) && (theRot < 72)) {theRot = 50}
+       else if ((theRot >= 72) && (theRot < 108)) {theRot = 100}
+       else if ((theRot >= 108) && (theRot < 144)) {theRot = 200}
+       else if ((theRot >= 144) && (theRot < 180)) {theRot = 250} 
+       else if ((theRot >= 180) && (theRot < 216)) {theRot = 350}
+       else if ((theRot >= 216) && (theRot < 252)) {theRot = 400}
+       else if ((theRot >= 252) && (theRot < 288)) {theRot = 450}
+       else if ((theRot >= 288) && (theRot < 324)) {theRot = 550} 
+       else if ((theRot >= 324) && (theRot < 360)) {theRot = 600} 
+    }   
 //Set frequency of each oscillator according to rotation
     for (var i = 0; i < oscillMax; i++){
 	    oscill[i].freq( (freq + rotationX) * interval[i] );
@@ -249,6 +283,9 @@ function draw(){
     // Buttons
     fill (255, 0, 0);
     rect(0, 0, 100, 60); 
+
+    fill (255, 0, 0);
+    rect(0, 0, 100, 60); 
     image(img, 25, 6, 50, 50);
 
     if(debug){
@@ -267,6 +304,7 @@ function draw(){
 		text("RotX: "+rotationX, 0, 780);
 		text("RotY: "+rotationY, 0, 860);
 		text("RotZ: "+rotationZ, 0, 940);
+        text("Modescale: "+modeScale, 0, 1020);
     }
      
 
@@ -313,7 +351,9 @@ function mouseClicked(){
             playing = false;
             //fullscreen(false);
         }
-    }
+    }else if (mouseX > 690 && mouseY < 60) {
+       modeScale = !modeScale;
+    } 
 
 }
 
