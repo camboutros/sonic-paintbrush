@@ -234,7 +234,7 @@ function draw(){
     }   
 //Set frequency of each oscillator according to rotation
     for (var i = 0; i < oscillMax; i++){
-	    oscill[i].freq( (freq + rotationX) * interval[i] );
+	    oscill[i].freq( (freq + theRot) * interval[i] );
 	}
 
    // osc.freq(freq + rotationX);
@@ -281,8 +281,8 @@ function draw(){
     }
 
     // Buttons
-    fill (255, 0, 0);
-    rect(0, 0, 100, 60); 
+    fill (0, 255, 0);
+    rect(690, 0, 100, 60); 
 
     fill (255, 0, 0);
     rect(0, 0, 100, 60); 
